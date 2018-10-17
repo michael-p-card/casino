@@ -159,6 +159,7 @@
 
         function dealPressed() {
             let betAmount = document.getElementById('betAmountBox');
+            document.getElementById('betAmountBox').disabled = 'disabled';
             let startingCredit = thePlayer.Credit;
             if (isNaN(betAmount.value)) {
                 alert('Both bet amount must be valid dollar amounts');

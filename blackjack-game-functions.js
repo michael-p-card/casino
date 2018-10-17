@@ -155,6 +155,7 @@ class BlackjackGameFunctions {
             console.log('Dealer won, ' + this.Players[0].Name + ' stats: hands won/hands played = ' + this.Players[0].GameState.getStats().HandsWon + '/' + this.Players[0].GameState.getStats().HandsPlayed);
         }
         document.getElementById("status").style.display = "inline-block";
+        document.getElementById('betAmountBox').disabled = '';
         return state;
     }
 
