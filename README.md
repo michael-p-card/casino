@@ -30,7 +30,7 @@ Item 3 above contained a nice state machine diagram I used to build the state ma
 
 In order to complete this project in a reasonable time frame with a serviceable simple GUI I opted to go with Javascript and HTML, basing my implementation off what was developed at That Software Dude's blog. This is my first project in Javascript and HTML. I love Scala, but implementing an equivalent Scala GUI would require using a Scala wrapper around Swing 🤮 or JavaFX, both of which would be more work than using HTML with Javascript.
 
-Most casino games are excellent candidates implementation via a finite state machine (FSM), so I chose to base the architecture of the micro casino around FSMs hosted within their own tabs on the casino page. I examined several FSM libraries that are out there for Javascript and settled for the one in item 2 above.
+Most casino games are excellent candidates implementation via a finite state machine (FSM), so I chose to base the architecture of the micro casino around FSMs hosted within their own tabs on the casino page. I examined several FSM libraries that are out there for Javascript and settled for the one in item 2 above. One of the things I wanted for this was a way to represent the rules for the games declaratively, maybe in a JSON or YAML file for example. However, the Javascript state machine library from item 2 is, in my opinion, as good as a static textual file in terms of  clearly and concisely capturing how the game should flow and the Methods section allows you to add any kind of handler for state transitions (I used these to write to the console log).
 
 ## Saving the Game State
 
