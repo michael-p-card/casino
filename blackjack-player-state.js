@@ -51,9 +51,12 @@ class BlackjackPlayerState {
         // If you go over 21, count an ace as 1 instead of 11
         if (points > 21) {
             points = 0;
-            this.Hand.forEach(function(card) {
+            // Sort hand by weight
+            let sortedHand = this.Hand.sort(function (a,b) {return a.Weight - b.Weight});
+            sortedHand.forEach(function(card) {
+                // aces will be counted last which lets you value them properly
                 if (card.Weight === 11) {
-                    points += 1;
+                    if (points + 11 < 22) points += 11; else points += 1; // Count aces as 1 if you'd bust
                 } else {
                     points += card.Weight;
                 }
