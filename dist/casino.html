@@ -4,6 +4,18 @@
 <html lang="en">
 <head>
 
+    <script src="/horizon/horizon.js"></script>
+
+    <script src="state-machine.js"></script>
+    <script src="state-machine-history.js"></script>
+    <script src="state-machine-visualize.js"></script>
+    <script src="blackjack-game-functions.js"></script>
+    <script src="blackjack-game-fsm.js"></script>
+    <script src="blackjack-player-state.js"></script>
+    <script src="player.js"></script>
+    <script src="card.js"></script>
+
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {font-family: Arial;}
@@ -45,6 +57,15 @@
             border-top: none;
         }
     </style>
+
+    <script>
+        let horizon = Horizon();
+        horizon.onReady(function() {
+            document.querySelector('h2').innerHTML = 'Horizon Micro Casino!'
+        });
+        horizon.connect();
+    </script>
+
 </head>
 <body>
 
@@ -63,7 +84,7 @@
         <div class="signin-options">
             <style>
                 label {
-                    position
+                    position: relative;
                 }
 
                 .input-field {
@@ -143,16 +164,6 @@
 
     </div>
 
-    <script src="state-machine.js"></script>
-    <script src="state-machine-history.js"></script>
-    <script src="state-machine-visualize.js"></script>
-    <script src="blackjack-game-functions.js"></script>
-    <script src="blackjack-game-fsm.js"></script>
-    <script src="blackjack-player-state.js"></script>
-    <script src="player.js"></script>
-    <script src="card.js"></script>
-
-
     <script>
 
         let blackjackGameStateFSM = new BlackjackGameFSM(new BlackjackGameFunctions());
@@ -169,7 +180,15 @@
         }
         function hitMePressed() { blackjackGameStateFSM.FSM.hitMePressed(); }
         function standPressed() { blackjackGameStateFSM.FSM.standPressed(); }
-        function cashOutPressed() { blackjackGameStateFSM.FSM.cashOutPressed(); }
+        function cashOutPressed() {
+            let horizon = Horizon();
+            horizon.connect();
+            let games = horizon("games");
+            let gameStateString = JSON.stringify(blackjackGameStateFSM.BJGameState.Players[0]);
+            console.log('saving game state ' + gameStateString);
+            games.store(gameStateString);
+            blackjackGameStateFSM.FSM.cashOutPressed();
+        }
 
         function statsPressed() {
             if (blackjackGameStateFSM.BJGameState.Players != null && blackjackGameStateFSM.BJGameState.Players.length > 0) {

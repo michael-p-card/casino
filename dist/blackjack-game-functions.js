@@ -12,7 +12,7 @@ class BlackjackGameFunctions {
     constructor() {
         this.GameDeck = Card.buildDeck();
         this.Bet = 0;
-        this.Player = null;
+        this.Players = null;
     }
 
     /**
