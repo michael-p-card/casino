@@ -57,6 +57,7 @@
     <button class="tablinks" onclick="openGame(event, 'Roulette')">Roulette</button>
 </div>
 
+
 <div id="SignIn" class="tabcontent">
 
     <div class="signin-body">
@@ -245,6 +246,9 @@
 
                 // change button to sign out
                 document.getElementById('btnSignIn').value = "Sign Out";
+
+                // populate initial credit box
+                document.getElementById('balanceBox').value = creditAmount;
 
                 thePlayer = new Player(1, userName, creditAmount*1);
                 signInComplete = true;
