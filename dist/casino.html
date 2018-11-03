@@ -262,6 +262,9 @@
                 document.getElementById('userNameBox').disabled = "disabled";
                 document.getElementById('creditBox').disabled = "disabled";
 
+                // populate initial credit box
+                document.getElementById('balanceBox').value = creditAmount;
+
                 // change button to sign out
                 document.getElementById('btnSignIn').value = "Sign Out";
 
