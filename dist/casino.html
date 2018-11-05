@@ -4,6 +4,7 @@
 <html lang="en">
 <head>
 
+    <script src="node_modules/rxjs/Rx.js"></script>
     <script src="/horizon/horizon.js"></script>
 
     <script src="state-machine.js"></script>
@@ -73,9 +74,9 @@
 <p>Choose your game!</p>
 
 <div class="tab">
-    <button class="tablinks" onclick="openSignIn(event, 'SignIn')">Sign In</button>
-    <button class="tablinks" onclick="openGame(event, 'Blackjack')">Blackjack</button>
-    <button class="tablinks" onclick="openGame(event, 'Roulette')">Roulette</button>
+    <button id="signInTab" class="tablinks" onclick="openSignIn(event, 'SignIn')">Sign In</button>
+    <button id="blackjackTab" class="tablinks" onclick="openGame(event, 'Blackjack')">Blackjack</button>
+    <button id="rouletteTab" class="tablinks" onclick="openGame(event, 'Roulette')">Roulette</button>
 </div>
 
 <div id="SignIn" class="tabcontent">
@@ -166,9 +167,14 @@
 
     <script>
 
-        let blackjackGameStateFSM = new BlackjackGameFSM(new BlackjackGameFunctions());
+        var blackjackGameStateFSM = null;
+        var blackjackGameStateFSMforStats = null;
 
         function dealPressed() {
+            if (blackjackGameStateFSM == null) {
+                blackjackGameStateFSM = new BlackjackGameFSM(new BlackjackGameFunctions());
+                blackjackGameStateFSMforStats = blackjackGameStateFSM;
+            }
             let betAmount = document.getElementById('betAmountBox');
             document.getElementById('betAmountBox').disabled = 'disabled';
             let startingCredit = thePlayer.Credit;
@@ -181,18 +187,14 @@
         function hitMePressed() { blackjackGameStateFSM.FSM.hitMePressed(); }
         function standPressed() { blackjackGameStateFSM.FSM.standPressed(); }
         function cashOutPressed() {
-            let horizon = Horizon();
-            horizon.connect();
-            let games = horizon("games");
-            let gameStateString = JSON.stringify(blackjackGameStateFSM.BJGameState.Players[0]);
-            console.log('saving game state ' + gameStateString);
-            games.store(gameStateString);
+            document.getElementById('creditBox').value = blackjackGameStateFSM.BJGameState.Players[0].Credit;
             blackjackGameStateFSM.FSM.cashOutPressed();
+            blackjackGameStateFSM = null;
         }
 
         function statsPressed() {
-            if (blackjackGameStateFSM.BJGameState.Players != null && blackjackGameStateFSM.BJGameState.Players.length > 0) {
-                let stats = blackjackGameStateFSM.BJGameState.Players[0].GameState.getStats();
+            if (blackjackGameStateFSMforStats.BJGameState.Players != null && blackjackGameStateFSMforStats.BJGameState.Players.length > 0) {
+                let stats = blackjackGameStateFSMforStats.BJGameState.Players[0].GameState.getStats();
                 alert(thePlayer.Name + ' stats: hands won/hands played = ' + stats.HandsWon + '/' + stats.HandsPlayed);
             }
         }
@@ -250,7 +252,7 @@
             let alphaNumeric = /^[a-zA-Z]+[a-zA-Z0-9]*$/;
             let userName = document.getElementById('userNameBox').value;
 
-            let creditAmount = document.getElementById('creditBox').value;
+            var creditAmount = document.getElementById('creditBox').value;
 
             if (!userName.match(alphaNumeric)) {
                 alert('Invalid user name, must begin with letter and contain only letters and numbers');
@@ -258,18 +260,61 @@
                 alert('Credit Amount must be a valid $ amount');
             } else {
 
-                // prevent changing contents
-                document.getElementById('userNameBox').disabled = "disabled";
-                document.getElementById('creditBox').disabled = "disabled";
+                let horizon = Horizon();
+                horizon.connect();
+                let games = horizon("games");
 
-                // populate initial credit box
-                document.getElementById('balanceBox').value = creditAmount;
+                // If user has played before use saved credit
+                games.findAll({Name: userName}).fetch().subscribe(users =>
+                    {
+                        if (users.length > 0) {
+                            console.log('Name: ' + users[0].Name + ', Credit: ' + users[0].Credit);
+                            creditAmount = users[0].Credit;
+                            document.getElementById('creditBox').value = creditAmount;
+                            // TODO need an interface for this that all game states inherit from so they all have the Game attribute
+                            console.log(users[0].Name + ' last played ' + users[0].GameState.Game);
 
-                // change button to sign out
-                document.getElementById('btnSignIn').value = "Sign Out";
+                            thePlayer = new Player(1, userName, creditAmount * 1);
 
-                thePlayer = new Player(1, userName, creditAmount*1);
-                signInComplete = true;
+                            // prevent changing contents
+                            document.getElementById('userNameBox').disabled = "disabled";
+                            document.getElementById('creditBox').disabled = "disabled";
+
+                            // populate initial credit box
+                            document.getElementById('balanceBox').value = creditAmount;
+
+                            // change button to sign out
+                            document.getElementById('btnSignIn').value = "Sign Out";
+
+                            signInComplete = true;
+
+                            // Select tab for last game played -
+                            // TODO need interface to ensure all GameState classes have the Game attribute
+                            if (users.length > 0 && users[0].GameState != null && users[0].GameState.Game === 'blackjack') {
+                                document.getElementById("blackjackTab").click();
+
+                            }
+
+                        } else {
+
+                            thePlayer = new Player(1, userName, creditAmount * 1);
+
+                            // prevent changing contents
+                            document.getElementById('userNameBox').disabled = "disabled";
+                            document.getElementById('creditBox').disabled = "disabled";
+
+                            // populate initial credit box
+                            document.getElementById('balanceBox').value = creditAmount;
+
+                            // change button to sign out
+                            document.getElementById('btnSignIn').value = "Sign Out";
+
+                            signInComplete = true;
+
+                        }
+                    }
+                );
+
             }
 
         } else {
@@ -278,7 +323,25 @@
             let record = {"Date": new Date().toLocaleString(), "Game": thePlayer.GameState.Game, "Wins": thePlayer.GameState.HandsWon, "HandsPlayed": thePlayer.GameState.HandsPlayed };
             thePlayer.StatisticalHistory.push(record);
 
-            // Detach game being played from plauyer
+            let horizon = Horizon();
+            horizon.connect();
+            let games = horizon("games");
+            let gameStateString = JSON.stringify(thePlayer);
+            console.log('saving player state ' + gameStateString);
+            // Remove any existing saved states for this user
+            games
+                .findAll({Name: thePlayer.Name}).fetch()
+                .mergeMap(userList => games.removeAll(userList))
+                .subscribe({
+                    next(id)   { console.log(`id ${id.Name} was removed`) },
+                    error(err) { console.error(`Error: ${err}`) },
+                    complete() { console.log('All items removed successfully') }
+                });
+            games.store(gameStateString);
+            console.log ('Saved game state for user ' + thePlayer.Name);
+
+
+            // Detach game being played from player
             thePlayer.GameState = null;
 
             // allow changing contents
@@ -288,7 +351,7 @@
             document.getElementById('userNameBox').value = '';
             document.getElementById('creditBox').value = '';
 
-            // change button to sign out
+            // change button to sign in
             document.getElementById('btnSignIn').value = "Sign In";
 
             thePlayer = null;
